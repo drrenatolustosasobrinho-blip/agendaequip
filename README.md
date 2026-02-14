@@ -214,7 +214,7 @@ DELETE FROM admins;
 
 ## 👨‍💻 Créditos
 
-**Desenvolvido por** Laice  
+**Laice — Assistente Virtual**  
 **Data:** Fevereiro 2026
 
 ---
