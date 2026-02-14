@@ -214,7 +214,7 @@ DELETE FROM admins;
 
 ## 👨‍💻 Créditos
 
-**Desenvolvido por:** Dr. Renato Lustosa Sobrinho (UEMS)  
+**Desenvolvido por** Laice  
 **Data:** Fevereiro 2026
 
 ---
