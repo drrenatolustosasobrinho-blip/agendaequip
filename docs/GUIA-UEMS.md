@@ -160,7 +160,7 @@ Envios **apenas** esses arquivos. O `.env.local` fica no seu PC (não sobe).
 
 ## 📞 Suporte
 
-Dúvidas? Contatar: Renato Homem (UEMS)
+Dúvidas? Contatar: Dr. Renato Lustosa Sobrinho (UEMS)
 
 ---
 

@@ -212,9 +212,11 @@ DELETE FROM admins;
 
 ---
 
-## 📞 Contato
+## 👨‍💻 Créditos
 
-Desenvolvido para Renato Homem (UEMS) por Laice (OpenClaw) — Fevereiro 2026
+**Desenvolvido por:** Dr. Renato Lustosa Sobrinho (UEMS)  
+**Assistente:** Laice (OpenClaw)  
+**Data:** Fevereiro 2026
 
 ---
 
