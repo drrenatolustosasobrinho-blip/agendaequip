@@ -3,10 +3,10 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { DayCard } from '../components/DayCard';
 import { getEquipmentById } from '../data/equipments';
 import {
-  loadConfig,
-  createReservation,
-  getApprovedReservationsForYear,
-} from '../services/storage';
+  getAppConfig,
+  listApprovedReservations,
+  createReservation as createReservationApi,
+} from '../services/api';
 import {
   addMonths,
   subMonths,
@@ -22,29 +22,38 @@ const weekDays = ['dom', 'seg', 'ter', 'qua', 'qui', 'sex', 'sáb'];
 export const EquipmentCalendarPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const config = loadConfig();
-  const currentYear = config.activeYear;
-
-  const [currentMonth, setCurrentMonth] = useState(new Date(currentYear, 0, 1));
+  const [config, setConfig] = useState<{ activeYear: number }>({ activeYear: new Date().getFullYear() });
+  const [currentMonth, setCurrentMonth] = useState(new Date());
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
   const [reservedDatesSet, setReservedDatesSet] = useState<Set<string>>(new Set());
+  const [approvedReservations, setApprovedReservations] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
 
   const equipment = getEquipmentById(id || '');
 
-  // Carregar reservas aprovadas quando mês/equipamento mudar
+  // Carregar config e reservas
   useEffect(() => {
-    if (!id) return;
-    const year = currentYear;
-    const allApproved = getApprovedReservationsForYear(year)
-      .filter(r => r.equipmentId === id)
-      .map(r => r.date);
-    setReservedDatesSet(new Set(allApproved));
-  }, [id, currentYear, currentMonth]);
+    const load = async () => {
+      try {
+        const cfg = await getAppConfig();
+        setConfig(cfg);
+        if (!id) return;
+        const reservations = await listApprovedReservations(id as any, cfg.activeYear);
+        setApprovedReservations(reservations);
+        setReservedDatesSet(new Set(reservations.map(r => r.date)));
+      } catch (err) {
+        console.error(err);
+      } finally {
+        setLoading(false);
+      }
+    };
+    load();
+  }, [id]);
 
   const today = new Date();
   today.setHours(0, 0, 0, 0);
 
-  // Aplicar estilos após renderização
+  // Aplicar estilos
   useEffect(() => {
     document.querySelectorAll('.calendar-day-cell[data-date]').forEach(cell => {
       const dateStr = (cell as HTMLElement).dataset.date;
@@ -58,13 +67,13 @@ export const EquipmentCalendarPage: React.FC = () => {
 
       if (isPast) {
         if (isReserved) {
-          cell.classList.add('reserved-past'); // vermelho
+          cell.classList.add('reserved-past');
         } else {
-          cell.classList.add('past'); // amarelo
+          cell.classList.add('past');
         }
       } else {
         if (isReserved) {
-          cell.classList.add('reserved-future'); // verde
+          cell.classList.add('reserved-future');
         }
       }
     });
@@ -97,7 +106,7 @@ export const EquipmentCalendarPage: React.FC = () => {
     setSelectedDate(date);
   };
 
-  const handleReservationSubmit = (data: {
+  const handleReservationSubmit = async (data: {
     requesterName: string;
     requesterEmail?: string;
     purpose?: string;
@@ -106,30 +115,45 @@ export const EquipmentCalendarPage: React.FC = () => {
   }) => {
     if (!id || !selectedDate) return;
     const dateStr = format(selectedDate, 'yyyy-MM-dd');
-    createReservation({
-      equipmentId: id as any,
-      date: dateStr,
-      startTime: data.startTime,
-      endTime: data.endTime,
-      requesterName: data.requesterName,
-      requesterEmail: data.requesterEmail,
-      purpose: data.purpose,
-    });
-    // Recarregar reservas
-    const allApproved = getApprovedReservationsForYear(currentYear)
-      .filter(r => r.equipmentId === id)
-      .map(r => r.date);
-    setReservedDatesSet(new Set(allApproved));
-    alert('Agendamento realizado, aguarde aprovação do adm.');
-    setSelectedDate(null);
+    try {
+      await createReservationApi({
+        equipmentId: id as any,
+        date: dateStr,
+        startTime: data.startTime,
+        endTime: data.endTime,
+        requesterName: data.requesterName,
+        requesterEmail: data.requesterEmail,
+        purpose: data.purpose,
+        year: config.activeYear,
+      });
+      alert('Agendamento realizado, aguarde aprovação do adm.');
+      setSelectedDate(null);
+      // Recarregar reservas
+      const reservations = await listApprovedReservations(id as any, config.activeYear);
+      setReservedDatesSet(new Set(reservations.map(r => r.date)));
+    } catch (err) {
+      alert('Erro ao criar reserva');
+      console.error(err);
+    }
   };
 
   const selectedDateReservations = useMemo(() => {
-    if (!selectedDate || !id) return [];
-    const dateStr = format(selectedDate, 'yyyy-MM-dd');
-    return getApprovedReservationsForYear(currentYear)
-      .filter(r => r.equipmentId === id && r.date === dateStr);
-  }, [selectedDate, id, currentYear]);
+    if (!selectedDate) return [];
+    const dateISO = format(selectedDate, 'yyyy-MM-dd');
+    return approvedReservations.filter(r => r.date === dateISO);
+  }, [selectedDate, approvedReservations]);
+
+  if (loading) {
+    return (
+      <div className="page">
+        <div className="container">
+          <div className="flex items-center justify-center min-h-screen">
+            <div className="text-gray-600">Carregando...</div>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   if (!equipment) {
     return (
@@ -258,7 +282,7 @@ export const EquipmentCalendarPage: React.FC = () => {
                     <ul className="text-xs md:text-sm text-gray-700 space-y-1">
                       {selectedDateReservations.map(res => (
                         <li key={res.id}>
-                          {res.startTime && res.endTime ? `${res.startTime}-${res.endTime}` : 'Horário indefinido'} - {res.requesterName}
+                          {res.start_time && res.end_time ? `${res.start_time}-${res.end_time}` : 'Horário indefinido'} - {res.requester_name}
                         </li>
                       ))}
                     </ul>
@@ -275,16 +299,17 @@ export const EquipmentCalendarPage: React.FC = () => {
             <div className="card bg-white rounded-lg shadow-md p-4">
               <h3 className="font-bold text-gray-800 mb-2">Solicitar horário</h3>
               <form
-                onSubmit={e => {
+                onSubmit={async e => {
                   e.preventDefault();
                   const formData = new FormData(e.target as HTMLFormElement);
-                  handleReservationSubmit({
+                  await handleReservationSubmit({
                     requesterName: formData.get('requesterName') as string,
                     requesterEmail: formData.get('requesterEmail') as string,
                     purpose: formData.get('purpose') as string,
                     startTime: formData.get('startTime') as string,
                     endTime: formData.get('endTime') as string,
                   });
+                  e.currentTarget.reset();
                 }}
                 className="space-y-3"
               >
