@@ -21,6 +21,7 @@ lerna-debug.log*
 .env
 .env.local
 .env.*.local
+.env.*.local
 
 # IDEs
 .vscode/
@@ -55,3 +56,12 @@ continuar_busca_emails_real.py
 # OS
 .DS_Store
 Thumbs.db
+
+# Vercel
+.vercel
+
+# Supabase local
+.supabase
+
+# Scripts de bootstrap
+scripts/.env
