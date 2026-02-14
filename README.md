@@ -215,14 +215,12 @@ DELETE FROM admins;
 ## 👨‍💻 Créditos
 
 **Desenvolvido por:** Dr. Renato Lustosa Sobrinho (UEMS)  
-**Assistente:** Laice (OpenClaw)  
 **Data:** Fevereiro 2026
 
 ---
 
-## 👨‍💻 Créditos
-
-**Desenvolvido por** Dr. Renato Lustosa Sobrinho (UEMS)
+**Desenvolvido por** Dr. Renato Lustosa Sobrinho (UEMS)  
+**Data:** Fevereiro 2026
 
 ---
 
