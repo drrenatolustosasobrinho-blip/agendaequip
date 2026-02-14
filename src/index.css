@@ -1,0 +1,269 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+body {
+  margin: 0;
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  background-color: #f5f5f5;
+}
+
+/* Calendar day cell colors */
+.calendar-day-cell.past {
+  background-color: #f1c40f !important; /* amarelo */
+}
+
+.calendar-day-cell.reserved-future {
+  background-color: #2ecc71 !important; /* verde */
+}
+
+.calendar-day-cell.reserved-past {
+  background-color: #e74c3c !important; /* vermelho */
+}
+
+/* Selected state (azul) - tem prioridade */
+.calendar-day-cell[data-selected="true"] {
+  background-color: #eff6ff !important; /* blue-50 */
+}
+
+/* Admin dashboard responsive styles */
+.equip-admin-wrap {
+  max-width: 1200px;
+  width: 100%;
+  margin: 0 auto;
+  padding: 16px;
+  box-sizing: border-box;
+}
+
+.equip-admin-toolbar {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap; /* quebra linha no pequeno */
+}
+
+.equip-admin-toolbar > * {
+  min-width: 220px; /* opcional */
+}
+
+.table-scroll {
+  width: 100%;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  margin: 0 -8px; /* compensa padding negativo quando em container com padding */
+  padding: 0 8px;
+}
+
+.table-scroll table {
+  width: 100%;
+  border-collapse: collapse;
+  table-layout: fixed;
+}
+
+.equip-admin-wrap table {
+  table-layout: fixed;
+}
+
+.equip-admin-wrap th,
+.equip-admin-wrap td {
+  word-wrap: break-word;
+  overflow-wrap: anywhere;
+}
+
+.equip-admin-wrap th.col-acoes,
+.equip-admin-wrap td.col-acoes {
+  width: 90px;
+  text-align: right;
+  white-space: nowrap;
+}
+
+/* Mobile adjustments */
+@media (max-width: 782px) {
+  .equip-admin-wrap {
+    padding: 12px;
+  }
+  .equip-admin-toolbar {
+    gap: 8px;
+  }
+  .equip-admin-toolbar > * {
+    min-width: auto;
+  }
+}
+
+/* Danger bar for "Iniciar novo ano" */
+.dangerBar {
+  max-width: 1200px;
+  margin: 12px auto 0;
+  padding: 12px 16px;
+  border: 1px solid #f0c36d;
+  background: #fff3cd;
+  border-radius: 10px;
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  justify-content: space-between;
+  box-sizing: border-box;
+}
+
+.dangerText {
+  font-size: 14px;
+  color: #856404;
+}
+
+.dangerBtn {
+  padding: 10px 14px;
+  border-radius: 8px;
+  border: 1px solid #b02a37;
+  background: #dc3545;
+  color: #fff;
+  font-weight: 700;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.dangerBtn:hover {
+  filter: brightness(0.95);
+}
+
+@media (max-width: 800px) {
+  .dangerBar {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .dangerBtn {
+    width: 100%;
+  }
+}
+
+/* Equipment Calendar Page - Responsive Layout */
+.page {
+  width: 100%;
+}
+
+.container {
+  max-width: 1200px;
+  width: 100%;
+  margin: 0 auto;
+  padding: 16px;
+  box-sizing: border-box;
+}
+
+.layout {
+  display: grid;
+  grid-template-columns: 1fr 360px;
+  gap: 16px;
+  align-items: start;
+}
+
+@media (max-width: 900px) {
+  .layout {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* Calendar area */
+.calendarScroll {
+  width: 100%;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  border: 1px solid #ddd;
+  border-radius: 10px;
+  background: #fff;
+}
+
+.calendarTable {
+  width: 100%;
+  min-width: 720px;
+  border-collapse: collapse;
+  display: table;
+}
+
+.calendarScroll thead {
+  display: table-header-group;
+}
+
+.calendarScroll tbody {
+  display: table-row-group;
+}
+
+.calendarScroll tr {
+  display: table-row;
+}
+
+.calendarScroll th,
+.calendarScroll td {
+  display: table-cell;
+  vertical-align: top;
+}
+
+/* Ensure inputs in sideArea are 100% width */
+.sideArea input,
+.sideArea textarea,
+.sideArea select,
+.sideArea button {
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
+}
+
+/* Cards in sideArea */
+.card {
+  border: 1px solid #ddd;
+  border-radius: 10px;
+  padding: 12px;
+  background: #fff;
+}
+
+/* Occupancy cards */
+.occ-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 16px;
+  width: 100%;
+}
+
+.occ-card {
+  border: 1px solid #ddd;
+  border-radius: 10px;
+  padding: 12px;
+  background: #fff;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.occ-title {
+  font-weight: 700;
+  margin-bottom: 8px;
+  text-align: center;
+  font-size: 1rem;
+  color: #374151;
+}
+
+.occ-chart {
+  position: relative;
+  height: 180px;
+}
+
+.occ-center {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none;
+}
+
+.occ-pct {
+  font-size: 28px;
+  font-weight: 800;
+  line-height: 1;
+  color: #1f2937;
+}
+
+.occ-sub {
+  font-size: 12px;
+  opacity: 0.8;
+  margin-top: 4px;
+  color: #6b7280;
+}
