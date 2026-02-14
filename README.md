@@ -2,403 +2,220 @@
 
 Aplicação web para gerenciamento de reservas anuais de equipamentos laboratoriais.
 
-## Funcionalidades
+## 🎯 Objetivo
 
-- **Menu de Equipamentos**: Escolha entre 3 equipamentos (Câmara de crescimento, IRGA, Casa de vegetação)
-- **Calendário Interativo**: Visualize reservas aprovadas por dia com cores diferenciadas (passado, futuro, reservado)
-- **Solicitação de Reserva**: Formulário para solicitar horários (status PENDING)
-- **Painel Admin**: Aprova/rejeita reservas, controle anual, gráficos de uso e taxa de ocupação
-- **Responsivo**: Funciona em desktop e mobile
-- **Persistência**: Dados salvos no LocalStorage do navegador
-
-## Tecnologias
-
-- React 18 + TypeScript
-- Vite
-- Tailwind CSS
-- Recharts (gráficos)
-- React Router DOM
+Deploy em servidores **HTML/PHP** comuns, sem dependency de Vercel/Netlify. Usa:
+- **Frontend:** React + Vite (build estático)
+- **Backend:** Supabase (PostgreSQL + Auth + Edge Functions)
+- **Rotas:** HashRouter (funciona em qualquer subpasta sem rewrite)
 
 ---
 
-## 🚀 Deploy (Escolha uma opção)
+## 🗄️ Estrutura de Pastas
 
-### Opção 1: Vercel (recomendada, mais fácil)
-
-1. Faça push do código para o GitHub
-2. Acesse https://vercel.com e faça login com GitHub
-3. Clique **"Add New... Project"**
-4. Selecione o repositório `agendaequip`
-5. Vercel detecta automaticamente Vite/React
-6. Clique **"Deploy"**
-7. Pronto! URL: `https://agendaequip.vercel.app`
-
-**Build Command:** `npm run build`
-**Output Directory:** `dist/`
-
-### Opção 2: Netlify
-
-1. Faça push do código para o GitHub
-2. Acesse https://netlify.com
-3. "New site from Git" → authorize Netlify
-4. Selecione o repositório
-5. Build settings:
-   - Build command: `npm run build`
-   - Publish directory: `dist`
-6. Deploy
-
-### Opção 3: GitHub Pages
-
-1. No repositório no GitHub, vá em **Settings** → **Pages**
-2. Em "Build and deployment", select source: **GitHub Actions**
-3. Crie um arquivo `.github/workflows/deploy.yml`:
-
-```yaml
-name: Deploy to GitHub Pages
-
-on:
-  push:
-    branches: [ master ]
-
-jobs:
-  build-and-deploy:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v3
-      - name: Setup Node
-        uses: actions/setup-node@v3
-        with:
-          node-version: '18'
-          cache: 'npm'
-      - run: npm ci
-      - run: npm run build
-        env:
-          VITE_BASE_URL: /agendaequip
-      - name: Deploy
-        uses: peaceiris/actions-gh-pages@v3
-        with:
-          github_token: ${{ secrets.GITHUB_TOKEN }}
-          publish_dir: ./dist
 ```
-
-4. Ajuste `vite.config.ts` com `base: '/agendaequip/'`
-5. Push → Pages ativo em `https://drrenatolustosasobrinho-blip.github.io/agendaequip`
-
-### Opção 4: Servidor próprio (Apache/Nginx)
-
-1. No servidor, clone o repositório
-2. Instale Node.js (v18+)
-3. Rode:
-   ```bash
-   cd reserva-equipamentos
-   npm ci --only=production
-   npm run build
-   ```
-4. A pasta `dist/` contém arquivos estáticos (HTML, CSS, JS)
-5. Configure o servidor web para servir `dist/` como raiz
-   - **Apache**: DocumentRoot → `dist/`
-   - **Nginx**: `root /path/to/dist;`
-6. Reinicie o servidor web
+reserva-equipamentos/
+├── src/                    # Código fonte React
+├── supabase/
+│   ├── schema.sql         # Schema + RLS
+│   └── functions/
+│       └── bootstrap-admin/
+│           └── index.ts   # Supabase Edge Function
+├── dist/                  # Build estático (deploy)
+├── .env.example
+├── vite.config.ts
+└── README.md
+```
 
 ---
 
-## 🗄️ Backend (Supabase) — PARTE 1/2
+## 🚀 Deploy em Servidor PHP (Passo a Passo)
 
-Esta seção descreve a configuração do backend com Supabase (PostgreSQL + Auth + Row Level Security).
+### 1) Configurar Supabase
 
-### Visão geral da arquitetura
+1. Criar projeto em https://app.supabase.com
+2. Anotar:
+   - **Project URL** (ex: `https://xyz.supabase.co`)
+   - **anon key** (começa com `eyJ...`)
+3. Aplicar `supabase/schema.sql` no SQL Editor
+4. Criar Edge Function `bootstrap-admin`:
+   - No Supabase Dashboard → Functions → New function
+   - Nome: `bootstrap-admin`
+   - Runtime: `deno-1.x`
+   - Copie o conteúdo de `supabase/functions/bootstrap-admin/index.ts`
+   - Em **Settings** → **Environment Variables**, adicione:
+     - `SUPABASE_URL` (sua URL do Supabase)
+     - `SUPABASE_SERVICE_ROLE_KEY` (sua service_role key)
+     - `BOOTSTRAP_PASSWORD` (senha secreta para bootstrap)
+   - Deploy da function
 
-- **Frontend**: React (Vite) — faz chamadas diretas ao Supabase usando a `anon key`
-- **Backend Serverless**: Vercel Functions (`/api/*`) — operações que exigem `service_role_key` (bootstrap, futuras APIs)
-- **Banco**: Supabase PostgreSQL com RLS
-- **Auth**: Supabase Auth (email/senha)
+---
 
-### 1) Criar projeto no Supabase
+### 2) Variáveis de Ambiente Locais
 
-1. Acesse https://app.supabase.com → **New Project**
-2. Nome: `reserva-equipamentos` (ou outro)
-3. Database: `Postgres` (default)
-4. Region: escolha a mais próxima (ex: São Paulo)
-5. Senha do banco: guarde (não usaremos diretamente)
-6. Aguarde provisionamento (~2 min)
-
-**Anote as credenciais:**
-- **Project URL**: `https://xyz.supabase.co`
-- **anon/public key**: começa com `eyJ...` (usada no frontend)
-- **service_role key**: começa com `eyJ...` (usada apenas serverless, NÃO exponha)
-
-Acesse: **Settings** → **API**
-
-### 2) Aplicar schema SQL
-
-No Supabase Dashboard:
-1. Vá em **SQL Editor** → **New query**
-2. Cole o conteúdo do arquivo `supabase/schema.sql`
-3. Clique **"Run"** (ou Ctrl+Enter)
-
-O schema cria:
-- Tabela `app_config` (config global com `id=1`)
-- Tabela `admins` (lista de UUIDs administrativos)
-- Tabela `reservations` (todas as reservas)
-- Índices para performance
-- Políticas RLS (segurança em nível de linha)
-
-### 3) Configurar variáveis de ambiente
-
-Crie um arquivo `.env.local` na raiz do projeto (não commitado) baseado no `.env.example`:
-
-```bash
-cp .env.example .env.local
-```
-
-Abra `.env.local` e preencha:
+Crie `.env.local` na raiz:
 
 ```env
-# === FRONTEND (Vite) — são expostas ao navegador ===
 VITE_SUPABASE_URL=https://seu-projeto.supabase.co
 VITE_SUPABASE_ANON_KEY=sua_anon_key_aqui
-
-# === SERVERLESS (Vercel Functions) — secretas, só no backend ===
-SUPABASE_URL=https://seu-projeto.supabase.co
-SUPABASE_SERVICE_ROLE_KEY=sua_service_role_key_aqui
-BOOTSTRAP_PASSWORD=escolha_uma_senha_secreta_aqui
 ```
 
-⚠️ **Importante:**
-- `SUPABASE_SERVICE_ROLE_KEY` e `BOOTSTRAP_PASSWORD` são usados **somente no backend** (Vercel Functions). Nunca os coloque no código frontend.
-- `VITE_*` são variáveis que o Vite expõe ao navegador (são seguras, pois a `anon key` tem permissões limitadas pelo RLS).
-
-### 4) Instalar dependências do Supabase no projeto
-
-```bash
-cd reserva-equipamentos
-npm install @supabase/supabase-js
-```
-
-### 5) Bootstrap de admin (first setup)
-
-Antes de usar o sistema, é necessário criar o primeiro usuário administrador.
-
-**Método A: Usar script helper**
-
-```bash
-node scripts/bootstrap-admin.js admin@exemplo.com senhaForte123
-```
-
-O script lê `.env.local` e chama o endpoint serverless.
-
-**Método B: cURL manual**
-
-```bash
-curl -X POST http://localhost:3000/api/bootstrap-admin \
-  -H "Content-Type: application/json" \
-  -d '{
-    "bootstrapPassword": "a_senha_definida_em_BOOTSTRAP_PASSWORD",
-    "adminEmail": "admin@exemplo.com",
-    "adminPassword": "senha_forte_do_admin"
-  }'
-```
-
-**O que acontece:**
-1. Valida a `bootstrapPassword`
-2. Verifica se `setup_done` ainda é `false` na `app_config`
-3. Cria usuário no Supabase Auth
-4. Insere `user_id` na tabela `admins`
-5. Marca `setup_done = true`
-
-A partir daí, o admin pode acessar `/admin` com o email/senha criados.
-
-### 6) Estrutura de pastas do backend
-
-```
-supabase/
-  └── schema.sql          # Schema + RLS
-api/
-  └── bootstrap-admin.ts  # Endpoint serverless (Vercel Functions)
-scripts/
-  └── bootstrap-admin.js  # Helper CLI
-.env.example              # Variáveis de ambiente (exemplo)
-```
-
-### 7) Deploy na Vercel com serverless functions
-
-1. Faça push para o GitHub
-2. Na Vercel, importe o repositório
-3. Em **Environment Variables**, adicione:
-   - `VITE_SUPABASE_URL`
-   - `VITE_SUPABASE_ANON_KEY`
-   - `SUPABASE_URL`
-   - `SUPABASE_SERVICE_ROLE_KEY`
-   - `BOOTSTRAP_PASSWORD`
-   - *(Marque todas como "Plain text", não "Environment variable group")*
-4. Deploy automático no push
-5. Após deploy, execute o bootstrap (passo 5) na URL da Vercel
+**Importante:** `VITE_*` são variáveis que o Vite inclui no build.
 
 ---
 
-## 📋 Como rodar localmente
-
-### Desenvolvimento (hot reload)
+### 3) Build Estático
 
 ```bash
 cd reserva-equipamentos
 npm install
-npm run dev
-```
-
-Acesse `http://localhost:5173/`
-
-### Build para produção
-
-```bash
 npm run build
 ```
 
-Os arquivos otimizados estarão em `dist/`.
+Isso gera a pasta `dist/` pronta para deploy.
 
-### Preview do build
+**Configuração do Vite:**
+- `base: './'` (caminhos relativos — funciona em qualquer subpasta)
+- HashRouter (não precisa de rewrite no servidor)
 
-```bash
-npx serve dist
+---
+
+### 4) Deploy no Servidor UEMS
+
+1. Conectar via FTP/SFTP ao servidor UEMS
+2. Navegar até a pasta pública (ex: `/public_html/`)
+3. Criar pasta `reserva-equipamento` (ou outro nome)
+4. Enviar **todo conteúdo de `dist/`** para essa pasta
+5. Permissões: 644 arquivos, 755 pastas (normalmente padrão)
+
+---
+
+### 5) Acessar
+
+- URL: `https://uems.br/reserva-equipamento/` (ou o caminho escolhido)
+- Usa `#` nas rotas: `index.html#/admin`, `index.html#/equipamento/growth_chamber`
+
+---
+
+## 🔐 Primeiro Setup (Admin)
+
+### Opção A: Usar Edge Function (recomendado)
+
+Após deploy, acesse `https://uems.br/reserva-equipamento/index.html#/admin`
+
+Como `setup_done` estará `false`, você verá a tela "Configuração Inicial".
+
+1. Digite Email do admin (ex: `admin@uems.br`)
+2. Senha do admin (escolha uma forte)
+3. Senha de bootstrap (definida em `BOOTSTRAP_PASSWORD` na Edge Function)
+4. Clique "Criar admin"
+
+A função chamará `/functions/v1/bootstrap-admin` e criará o admin no Supabase.
+
+### Opção B: Criar admin manualmente (se a function falhar)
+
+1. No Supabase Dashboard → Authentication → Users → Create user
+   - Email e senha
+2. Anote o `id` (UUID) do usuário criado
+3. No SQL Editor, execute:
+
+```sql
+INSERT INTO admins (user_id) VALUES ('UUID-AQUI');
+UPDATE app_config SET setup_done = true WHERE id = 1;
+```
+
+4. Agora pode fazer login no `/admin` com esse email/senha
+
+---
+
+## 🧪 Testes Manuais
+
+1. **Usuário anônimo:**
+   - Acessar homepage → escolher equipamento
+   - Clicar em data futura → preencher formulário → submit
+   - Mensagem: "Agendamento realizado, aguarde aprovação do adm"
+   - A data **não** fica verde (status PENDING não é público)
+
+2. **Admin:**
+   - Acessar `/admin` → login
+   - Ver fila de pendências
+   - Aprovar → reserva aparece no calendário público (verde)
+   - Rejeitar → some
+   - Iniciar novo ano (digitar "INICIAR")
+   - Ver gráficos e cards de ocupação
+
+3. **Responsividade:**
+   - Testar em mobile, tablet, desktop
+   - Calendário rola horizontalmente se necessário
+
+---
+
+## 🔧 Manutenção
+
+### Atualizar código
+
+1. Fazer alterações no código-fonte
+2. `npm run build`
+3. Substituir arquivos na pasta `reserva-equipamento/` no servidor
+4. Limpar cache do navegador (ou usar versão nos assets)
+
+### Resetar sistema (caso necessário)
+
+No Supabase SQL Editor:
+
+```sql
+-- Deletar todas as reservas
+DELETE FROM reservations;
+-- Resetar config (opcional)
+UPDATE app_config SET active_year = EXTRACT(YEAR FROM NOW())::int, setup_done = false WHERE id = 1;
+-- Deletar admin
+DELETE FROM admins;
 ```
 
 ---
 
-## 🔐 Admin
+## 📁 Arquivos Importantes
 
-- Rota: `/admin`
-- Senha: `admin123` (altere em `src/pages/AdminDashboard.tsx` se necessário)
-- Funcionalidades:
-  - Aprovar/rejeitar reservas pendentes
-  - Iniciar novo ano (ação destrutiva, confirmação dupla)
-  - Visualizar gráficos de uso e taxa de ocupação
-  - Cancelar reservas aprovadas
+- `supabase/schema.sql` — Estrutura do banco + RLS
+- `supabase/functions/bootstrap-admin/index.ts` — Edge Function
+- `dist/` — Pasta para upload no servidor
+- `.env.local` — Variáveis de ambiente (não enviar ao servidor!)
 
 ---
 
-## 📊 Estrutura de pastas
+## ⚠️ Observações
 
-```
-src/
-├── components/
-│   ├── DayCard.tsx          # Célula do calendário
-│   ├── DayDetailsPanel.tsx  # Painel lateral de detalhes
-│   ├── EquipmentCard.tsx    # Card do menu inicial
-│   ├── EquipmentOccupancyCard.tsx  # Card de taxa de ocupação (donut)
-│   └── ReservationForm.tsx  # Formulário de solicitação
-├── data/
-│   └── equipments.ts        # Definição dos equipamentos
-├── pages/
-│   ├── AdminDashboard.tsx   # Painel administrativo
-│   ├── EquipmentCalendarPage.tsx  # Calendário por equipamento
-│   └── HomeMenu.tsx         # Menu principal
-├── services/
-│   └── storage.ts           # LocalStorage + helpers
-├── types/
-│   ├── equipment.ts
-│   └── reservation.ts
-├── App.tsx
-├── index.css                # Estilos globais + responsividade
-└── main.tsx
-```
+- **Edge Function:** Só funciona no Supabase (não é移植 para outros backends). Mas é opcional — admin pode ser criado manualmente.
+- **HashRouter:** Usa `#` na URL (ex: `#/admin`). Não precisa de configuração de servidor.
+- **Supabase Auth:** Login funciona client-side. Não há sessão no servidor PHP.
+- **RLS:** Garante segurança mesmo com o frontend acessando o banco diretamente.
 
 ---
 
-## 🗄️ Modelo de dados
+## 🆘 Troubleshooting
 
-### Reservation
-```typescript
-{
-  id: string;
-  year: number;           // Ano ativo
-  equipmentId: 'growth_chamber' | 'irga' | 'greenhouse';
-  date: string;           // YYYY-MM-DD
-  startTime?: string;     // HH:mm
-  endTime?: string;       // HH:mm
-  requesterName: string;
-  requesterEmail?: string;
-  purpose?: string;
-  status: 'PENDING' | 'APPROVED' | 'REJECTED';
-  createdAt: ISO string;
-  decidedAt?: ISO string;
-  decidedBy?: string;
-  decisionNote?: string;
-}
-```
+### Rotas não funcionam (404 ao acessar /admin)
+- Verifique se está usando HashRouter (deve aparecer `#` na URL)
+- Se usar BrowserRouter, precisa configurar rewrite no servidor — não recomendado
 
-### Config (LocalStorage)
-```typescript
-{
-  activeYear: number;
-}
-```
+### Erro de CORS na Edge Function
+- Verifique se a function está deployada
+- Verifique variáveis de ambiente (SUPABASE_URL, SERVICE_ROLE_KEY)
+
+### Erro de autenticação no admin
+- Verificar se o admin foi criado na tabela `admins`
+- Verificar email/senha no Supabase Auth
+
+### Reservas não aparecem no calendário
+- Verificar se status é `APPROVED` (RLS só mostra aprovadas)
+- Verificar se `year` corresponde ao `activeYear` da config
 
 ---
 
-## 🔧 Personalizações importantes
+## 📞 Contato
 
-### Alterar senha do admin
-
-Edite `src/pages/AdminDashboard.tsx`:
-```typescript
-const ADMIN_PASSWORD = 'admin123'; // ⬅️ mude aqui
-```
-
-### Adicionar equipamentos
-
-Edite `src/data/equipments.ts`:
-```typescript
-{
-  id: 'novo_equipamento',
-  name: 'Nome do Equipamento',
-  description: 'Descrição opcional'
-}
-```
-
-### Cores do calendário
-
-Edite `src/index.css`:
-```css
-.calendar-day-cell.past { background-color: #f1c40f !important; }      /* amarelo */
-.calendar-day-cell.reserved-future { background-color: #2ecc71 !important; } /* verde */
-.calendar-day-cell.reserved-past { background-color: #e74c3c !important; }   /* vermelho */
-```
+Desenvolvido para Renato Homem (UEMS) por Laice (OpenClaw) — Fevereiro 2026
 
 ---
 
-## 🚨 Ação "Iniciar novo ano"
-
-- Botão posicionado no topo da admin, em faixa amarela de alerta
-- Requer digitar `INICIAR` para confirmar
-- Incrementa `activeYear` e limpa pendências
-- **Aviso**: Coletar estatísticas do ano anterior antes de executar
-
----
-
-## 🛠️ Solução de problemas
-
-### Build falha: "Cannot find module '...'"
-```bash
-rm -rf node_modules package-lock.json
-npm install
-```
-
-### Dados sumiram
-- Dados estão no LocalStorage do navegador
-- Limpar LocalStorage apaga tudo
-- Para backup: exporte `app_config`, `reservations` do DevTools → Application → Local Storage
-
-### Gráfico não aparece
-- Verifique console do navegador (F12)
-- Precisa ter reservas APROVADAS no ano selecionado
-- `chartData` vazio = sem dados
-
----
-
-## 📄 Licença
-
-Projeto desenvolvido para uso interno da universidade.
-
----
-
-**Desenvolvido para Renato Homem** ✨
+**Pronto para deploy em servidor PHP common!** 🚀
