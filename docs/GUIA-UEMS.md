@@ -158,11 +158,5 @@ Envios **apenas** esses arquivos. O `.env.local` fica no seu PC (não sobe).
 
 ---
 
-## 📞 Suporte
-
-Dúvidas? Contatar: Dr. Renato Lustosa Sobrinho (UEMS)
-
----
-
 **Versão:** 2.0 (Supabase + HashRouter)  
 **Data:** Fevereiro 2026
